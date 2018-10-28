@@ -9,6 +9,10 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
+// xml parsing dependencies 
+var fs = require('fs'),
+  xml2js = require('xml2js');
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -39,3 +43,26 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
+var parser = new xml2js.Parser();
+var builder = new xml2js.Builder();
+
+var inputFilename = '/Users/uri/Desktop/polar exports/uri_leshem_2018-09-01_20-50-20.tcx'
+var outputFilename = '/Users/uri/Desktop/polar exports/uri_leshem_2018-09-01_20-50-20_garmin.tcx'
+
+fs.readFile(inputFilename, function(err, data) {
+
+  //TODO: Extract this to it's own funciton so it can be called on each file
+  parser.parseString(data, function (err, result) {
+    // Delete the "Creator" node from all activities in the XML
+    result.TrainingCenterDatabase.Activities.map(x => x.Activity.map(y => delete y.Creator));
+    // Delete the "Author" node from the XML
+    delete result.TrainingCenterDatabase.Author;
+
+    var xml = builder.buildObject(result);
+    fs.writeFile(outputFilename, xml, (err) => {
+      if (err) throw err;
+      console.log('The file has been saved!');
+    });
+  });  
+});
